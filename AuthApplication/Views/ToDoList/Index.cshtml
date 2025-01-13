@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "ToDo List";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center">ToDo List</h2>
+    <div class="mb-4">
+        <div class="input-group">
+            <input type="text" id="taskName" class="form-control" placeholder="Task Name" aria-label="Task Name">
+            <textarea id="taskDescription" class="form-control" placeholder="Description" aria-label="Description" rows="2"></textarea>
+        </div>
+        <button id="addTaskButton" class="btn btn-primary mt-2">Add Task</button>
+    </div>
+
+
+    <h3>Tasks:</h3>
+    <ul id="todoList" class="list-group"></ul>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        function fetchTodos() {
+            $.ajax({
+                url: '/ToDoList/Index',
+                method: 'GET',
+                success: function (data) {
+                    $('#todoList').empty(); 
+                    data.forEach(function (todo) {
+                        $('#todoList').append(`
+                            <li id="todo-${todo.id}" class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${todo.name}</strong>
+                                    <p>${todo.description}</p>
+                                    <span class="text-muted small">Created on: ${new Date(todo.dateofCreation).toLocaleDateString()}</span>
+                                </div>
+                                <div>
+                                    <button class="completeButton btn btn-success btn-sm" data-id="${todo.id}">Complete</button>
+                                    <button class="editButton btn btn-warning btn-sm" data-id="${todo.id}">Edit</button>
+                                    <button class="deleteButton btn btn-danger btn-sm" data-id="${todo.id}">Delete</button>
+                                </div>
+                            </li>
+                        `);
+                    });
+                }
+            });
+        }
+
+        fetchTodos();
+
+        $('#addTaskButton').click(function () {
+            var taskName = $('#taskName').val();
+            var taskDescription = $('#taskDescription').val();
+
+            if (taskName && taskDescription) {
+                $.ajax({
+                    url: '/ToDoList/Create',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        Name: taskName,
+                        Description: taskDescription,
+                        DateofCreation: new Date().toISOString(),
+                        IsCompleted: false
+                    }),
+                    success: function (data)
+                    {
+                        $('#taskName').val('');
+                        $('#taskDescription').val('');
+                        fetchTodos();
+                    }
+                });
+            }
+        });
+
+        $(document).on('click', '.completeButton', function () 
+        {
+            var id = $(this).data('id');
+            $.ajax({
+                url: '/ToDoList/Edit',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    Id: id,
+                    Name: `Completed: ${$('#todo-' + id).find('strong').text()}`,
+                    Description: $('#todo-' + id).find('p').text(),
+                    DateofCreation: new Date().toISOString(),
+                    IsCompleted: true
+                }),
+                success: function ()
+                {
+                    fetchTodos();
+                }
+            });
+        });
+
+        $(document).on('click', '.editButton', function () {
+            var id = $(this).data('id');
+            var currentName = $('#todo-' + id).find('strong').text();
+            var currentDescription = $('#todo-' + id).find('p').text();
+
+            $('#taskName').val(currentName);
+            $('#taskDescription').val(currentDescription);
+
+            $('#addTaskButton').hide();
+            $('<button id="saveTaskButton" class="btn btn-warning mt-2 btn-sm">Save Task</button>')
+                .insertAfter('#addTaskButton')
+                .click(function () {
+                    var updatedName = $('#taskName').val();
+                    var updatedDescription = $('#taskDescription').val();
+
+                    if (updatedName && updatedDescription) {
+                        $.ajax({
+                            url: '/ToDoList/Edit',
+                            method: 'PUT',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                Id: id,
+                                Name: updatedName,
+                                Description: updatedDescription,
+                                DateofCreation: new Date().toISOString(),
+                                IsCompleted: false
+                            }),
+                            success: function () {
+                                $('#saveTaskButton').remove();
+                                $('#addTaskButton').show();
+                                fetchTodos();
+                            }
+                        });
+                    }
+                });
+        });
+
+        $(document).on('click', '.deleteButton', function () {
+            var id = $(this).data('id');
+            $.ajax({
+                url: '/ToDoList/Delete?id=' + id,
+                method: 'DELETE',
+                success: function () {
+                    fetchTodos(); 
+                }
+            });
+        });
+    });
+</script>

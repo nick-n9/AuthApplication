@@ -1,0 +1,39 @@
+﻿@using Microsoft.AspNetCore.Identity
+@model IEnumerable<AppUser>
+@{
+    Layout = "_Layout";
+}
+
+
+<h2>List of Users</h2>
+<a asp-controller="Admin" asp-action="Create"  class="btn btn-primary mb-2 ">Create User</a>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Name</td>
+                <td>@user.Email</td>
+                <td>
+                    <a asp-controller="Admin" asp-action="Edit" asp-route-userId="@user.Id" class="btn btn-primary mx-2">
+                        Edit
+                    </a>
+                    
+                    <form method="post" asp-controller="Admin" asp-action="Delete" asp-route-userid="@user.Id" style="display:inline;">
+                        <button type="submit" class="btn btn-primary mx-2">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
